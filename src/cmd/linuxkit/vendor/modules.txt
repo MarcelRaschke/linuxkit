@@ -95,11 +95,9 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/checkpoint-restore/go-criu v0.0.0-20191125063657-fcdcd07065c5
-## explicit
 # github.com/containerd/console v1.0.2
 github.com/containerd/console
-# github.com/containerd/containerd v1.5.7
+# github.com/containerd/containerd v1.5.10
 ## explicit
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/content
@@ -129,7 +127,6 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/dchest/bcrypt_pbkdf
 # github.com/deislabs/oras v0.8.1
-## explicit
 github.com/deislabs/oras/pkg/auth
 github.com/deislabs/oras/pkg/auth/docker
 github.com/deislabs/oras/pkg/content
@@ -186,7 +183,6 @@ github.com/docker/docker/rootless
 github.com/docker/docker-credential-helpers/client
 github.com/docker/docker-credential-helpers/credentials
 # github.com/docker/go-connections v0.4.1-0.20190612165340-fd1b1942c4d5
-## explicit
 github.com/docker/go-connections/nat
 github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
@@ -195,8 +191,6 @@ github.com/docker/go-metrics
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
 # github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
-## explicit
-# github.com/estesp/manifest-tool v2.0.0-beta.1.0.20211004205052-ff1e39f94354+incompatible
 ## explicit
 # github.com/estesp/manifest-tool/v2 v2.0.0-beta.1
 ## explicit
@@ -294,8 +288,6 @@ github.com/linuxkit/virtsock/pkg/hvsock
 github.com/linuxkit/virtsock/pkg/vsock
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
-## explicit
 # github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 ## explicit
 github.com/mitchellh/go-ps
@@ -318,11 +310,9 @@ github.com/morikuni/aec
 # github.com/moul/gotty-client v1.7.1-0.20180526075433-e5589f6df359
 ## explicit
 github.com/moul/gotty-client
-# github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e
-## explicit
 # github.com/opencontainers/go-digest v1.0.0
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.2-0.20210730191737-8e42a01fb1b7
+# github.com/opencontainers/image-spec v1.0.2
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
@@ -341,7 +331,6 @@ github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.2.0
-## explicit
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.10.0
 github.com/prometheus/common/expfmt
@@ -610,9 +599,3 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# k8s.io/code-generator v0.19.7
-## explicit
-# k8s.io/gengo v0.0.0-20201113003025-83324d819ded
-## explicit
-# rsc.io/letsencrypt v0.0.3
-## explicit
