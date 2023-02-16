@@ -13,7 +13,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.2
 	github.com/ScaleFT/sshkeys v0.0.0-20181112160850-82451a803681
 	github.com/aws/aws-sdk-go v1.34.9
-	github.com/containerd/containerd v1.6.6
+	github.com/containerd/containerd v1.6.18
 	github.com/creack/goselect v0.0.0-20180501195510-58854f77ee8d // indirect
 	github.com/dchest/bcrypt_pbkdf v0.0.0-20150205184540-83f37f9c154a // indirect
 	github.com/docker/buildx v0.8.2
@@ -44,7 +44,7 @@ require (
 	github.com/vmware/govmomi v0.20.3
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/api v0.57.0
