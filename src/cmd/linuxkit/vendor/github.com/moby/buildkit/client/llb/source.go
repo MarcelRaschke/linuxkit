@@ -132,8 +132,9 @@ func Image(ref string, opts ...ImageOption) State {
 					p = c.Platform
 				}
 				_, dt, err := info.metaResolver.ResolveImageConfig(ctx, ref, ResolveImageConfigOpt{
-					Platform:    p,
-					ResolveMode: info.resolveMode.String(),
+					Platform:     p,
+					ResolveMode:  info.resolveMode.String(),
+					ResolverType: ResolverTypeRegistry,
 				})
 				if err != nil {
 					return State{}, err
@@ -147,8 +148,9 @@ func Image(ref string, opts ...ImageOption) State {
 				p = c.Platform
 			}
 			dgst, dt, err := info.metaResolver.ResolveImageConfig(context.TODO(), ref, ResolveImageConfigOpt{
-				Platform:    p,
-				ResolveMode: info.resolveMode.String(),
+				Platform:     p,
+				ResolveMode:  info.resolveMode.String(),
+				ResolverType: ResolverTypeRegistry,
 			})
 			if err != nil {
 				return State{}, err
@@ -452,6 +454,59 @@ func Differ(t DiffType, required bool) LocalOption {
 	})
 }
 
+func OCILayout(ref string, opts ...OCILayoutOption) State {
+	gi := &OCILayoutInfo{}
+
+	for _, o := range opts {
+		o.SetOCILayoutOption(gi)
+	}
+	attrs := map[string]string{}
+	if gi.sessionID != "" {
+		attrs[pb.AttrOCILayoutSessionID] = gi.sessionID
+	}
+	if gi.storeID != "" {
+		attrs[pb.AttrOCILayoutStoreID] = gi.storeID
+	}
+	if gi.layerLimit != nil {
+		attrs[pb.AttrOCILayoutLayerLimit] = strconv.FormatInt(int64(*gi.layerLimit), 10)
+	}
+
+	addCap(&gi.Constraints, pb.CapSourceOCILayout)
+
+	source := NewSource("oci-layout://"+ref, attrs, gi.Constraints)
+	return NewState(source.Output())
+}
+
+type OCILayoutOption interface {
+	SetOCILayoutOption(*OCILayoutInfo)
+}
+
+type ociLayoutOptionFunc func(*OCILayoutInfo)
+
+func (fn ociLayoutOptionFunc) SetOCILayoutOption(li *OCILayoutInfo) {
+	fn(li)
+}
+
+func OCIStore(sessionID string, storeID string) OCILayoutOption {
+	return ociLayoutOptionFunc(func(oi *OCILayoutInfo) {
+		oi.sessionID = sessionID
+		oi.storeID = storeID
+	})
+}
+
+func OCILayerLimit(limit int) OCILayoutOption {
+	return ociLayoutOptionFunc(func(oi *OCILayoutInfo) {
+		oi.layerLimit = &limit
+	})
+}
+
+type OCILayoutInfo struct {
+	constraintsWrapper
+	sessionID  string
+	storeID    string
+	layerLimit *int
+}
+
 type DiffType string
 
 const (
@@ -555,7 +610,7 @@ func Chown(uid, gid int) HTTPOption {
 }
 
 func platformSpecificSource(id string) bool {
-	return strings.HasPrefix(id, "docker-image://")
+	return strings.HasPrefix(id, "docker-image://") || strings.HasPrefix(id, "oci-layout://")
 }
 
 func addCap(c *Constraints, id apicaps.CapID) {

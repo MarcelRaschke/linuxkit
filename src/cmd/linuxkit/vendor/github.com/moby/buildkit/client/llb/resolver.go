@@ -34,8 +34,24 @@ type ImageMetaResolver interface {
 	ResolveImageConfig(ctx context.Context, ref string, opt ResolveImageConfigOpt) (digest.Digest, []byte, error)
 }
 
+type ResolverType int
+
+const (
+	ResolverTypeRegistry ResolverType = iota
+	ResolverTypeOCILayout
+)
+
 type ResolveImageConfigOpt struct {
+	ResolverType
+
 	Platform    *ocispecs.Platform
 	ResolveMode string
 	LogName     string
+
+	Store ResolveImageConfigOptStore
+}
+
+type ResolveImageConfigOptStore struct {
+	SessionID string
+	StoreID   string
 }
