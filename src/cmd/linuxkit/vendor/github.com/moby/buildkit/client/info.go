@@ -9,17 +9,17 @@ import (
 )
 
 type Info struct {
-	BuildkitVersion BuildkitVersion
+	BuildkitVersion BuildkitVersion `json:"buildkitVersion"`
 }
 
 type BuildkitVersion struct {
-	Package  string
-	Version  string
-	Revision string
+	Package  string `json:"package"`
+	Version  string `json:"version"`
+	Revision string `json:"revision"`
 }
 
 func (c *Client) Info(ctx context.Context) (*Info, error) {
-	res, err := c.controlClient().Info(ctx, &controlapi.InfoRequest{})
+	res, err := c.ControlClient().Info(ctx, &controlapi.InfoRequest{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to call info")
 	}
