@@ -34,10 +34,193 @@ This requires complete replacement of Android and full hardware driver support.
 ### Option B: Kali NetHunter Chroot (easier, Android preserved)
 
 Run Kali Linux inside Android via a chroot/proot environment using Termux.
-This does **not** use LinuxKit but achieves similar results with less effort.
+This does **not** use LinuxKit but achieves similar results with less effort
+and preserves your Android installation.
 
-See [Kali NetHunter documentation](https://www.kali.org/docs/nethunter/) for
-this approach.
+**Pros:** No bootloader unlock needed, Android continues to work, faster setup
+**Cons:** Slightly reduced performance vs native, some kernel features restricted
+
+See [`contrib/android-kali/`](../contrib/android-kali/) for automated setup scripts.
+
+---
+
+## Option B: Kali NetHunter Chroot (Termux + proot)
+
+### Prerequisites
+
+- **Termux** from [F-Droid](https://f-droid.org/en/packages/com.termux/)
+  (the Google Play version is outdated and unsupported)
+- At least **4 GB** free internal storage (2 GB for minimal install)
+- Internet connection during initial setup
+- Optional: **Magisk** (root) for native chroot with full hardware access
+
+### Quick Setup
+
+Open Termux and run the automated setup script:
+
+```bash
+curl -fsSL \
+  https://raw.githubusercontent.com/marcelraschke/linuxkit/main/contrib/android-kali/nethunter-setup.sh \
+  | bash
+```
+
+Or copy the script from this repository and run locally:
+
+```bash
+bash contrib/android-kali/nethunter-setup.sh
+```
+
+Available options:
+
+```
+--minimal   Download minimal rootfs (~200MB) instead of full (~1.5GB)
+--tools     Install kali-tools-top10 automatically
+--vnc       Set up VNC server + XFCE4 graphical desktop
+--root      Use native chroot (requires Magisk root)
+```
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+**Step 1: Install Termux dependencies**
+
+```bash
+pkg update && pkg install -y proot curl tar
+```
+
+**Step 2: Download the Kali ARM64 rootfs**
+
+```bash
+# Full install (~1.5GB)
+wget -O ~/kali-rootfs.tar.xz \
+  https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-full.tar.xz
+
+# Minimal install (~200MB)
+wget -O ~/kali-rootfs.tar.xz \
+  https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz
+```
+
+**Step 3: Extract the rootfs**
+
+```bash
+mkdir -p ~/kali-arm64
+proot --link2symlink tar -xJf ~/kali-rootfs.tar.xz \
+  -C ~/kali-arm64 --exclude='dev'
+rm ~/kali-rootfs.tar.xz
+```
+
+**Step 4: Configure DNS and hostname**
+
+```bash
+echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" > ~/kali-arm64/etc/resolv.conf
+echo "kali-tablet" > ~/kali-arm64/etc/hostname
+```
+
+**Step 5: Create a launch script**
+
+```bash
+cat > $PREFIX/bin/kali <<'EOF'
+#!/usr/bin/env bash
+exec proot --link2symlink -0 \
+  -r ~/kali-arm64 \
+  -b /proc -b /sys -b /dev -b /dev/pts \
+  -b /sdcard \
+  -w /root \
+  /usr/bin/env -i \
+    HOME=/root \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    TERM="${TERM:-xterm-256color}" \
+    LANG=C.UTF-8 \
+    "${@:-/bin/bash --login}"
+EOF
+chmod +x $PREFIX/bin/kali
+```
+
+**Step 6: Enter Kali**
+
+```bash
+kali
+```
+
+### Installing Security Tools
+
+Inside the Kali proot environment:
+
+```bash
+# Update package lists
+apt-get update
+
+# Top 10 Kali tools (recommended starting point)
+apt-get install -y kali-tools-top10
+
+# Wireless security assessment tools
+apt-get install -y kali-tools-wireless
+
+# Web application testing
+apt-get install -y kali-tools-web
+
+# Individual tools
+apt-get install -y nmap tcpdump wireshark-cli netcat-openbsd \
+  metasploit-framework burpsuite sqlmap john hydra nikto \
+  aircrack-ng hashcat responder impacket-scripts
+```
+
+### SSH Access
+
+Enable SSH inside the Kali environment for remote access over USB tethering:
+
+```bash
+# Inside Kali
+apt-get install -y openssh-server
+# Set a password for the root account
+passwd root
+# Start SSH (proot uses non-standard port by default)
+/usr/sbin/sshd -p 2222 -o "PermitRootLogin yes" -o "PasswordAuthentication yes"
+```
+
+Connect from your computer:
+
+```bash
+# Enable USB tethering on the tablet first (Android Settings → Network)
+ssh -p 2222 root@<tablet-usb-ip>
+```
+
+### Graphical Desktop via VNC
+
+Install a lightweight desktop environment for graphical tools:
+
+```bash
+# Inside Kali
+apt-get install -y tigervnc-standalone-server xfce4 xfce4-terminal dbus-x11
+
+# Set VNC password
+vncpasswd
+
+# Start VNC server (tablet display is 1280×800)
+vncserver :1 -geometry 1280x800 -depth 24 -localhost no
+```
+
+Connect with a VNC client (e.g. RealVNC Viewer, TigerVNC) to `<tablet-ip>:5901`.
+
+To stop the VNC server:
+
+```bash
+vncserver -kill :1
+```
+
+### Limitations of proot Mode
+
+Running without root (proot mode) has some restrictions:
+
+- **Raw sockets** limited — some network scanners need root privileges
+- **Kernel modules** cannot be loaded — e.g. no `monitor mode` for WiFi
+- **Device access** restricted — cannot directly open `/dev/rfkill`, USB raw devices
+- **iptables/nftables** require root on the Android kernel
+
+For full capabilities (including WiFi monitor mode and raw socket operations),
+use the `--root` flag with Magisk-rooted Android, or use
+[Option A](#option-a-native-linuxkit-boot) for native Linux boot.
 
 ---
 
