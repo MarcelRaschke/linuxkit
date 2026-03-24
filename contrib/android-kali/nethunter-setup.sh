@@ -13,10 +13,11 @@
 #   bash nethunter-setup.sh [--root]
 #
 # OPTIONS:
-#   --root      Use native chroot (requires root / Magisk)
-#   --tools     Install Kali security tools after setup (needs network)
-#   --vnc       Install VNC server for graphical desktop access
-#   --help      Show this help
+#   --root          Use native chroot (requires root / Magisk)
+#   --wifi-monitor  Configure WiFi monitor mode (only with --root, needs compatible adapter)
+#   --tools         Install Kali security tools after setup (needs network)
+#   --vnc           Install VNC server for graphical desktop access
+#   --help          Show this help
 #
 # REQUIREMENTS:
 #   - Termux installed from F-Droid (NOT Google Play — Play version is outdated)
@@ -37,6 +38,8 @@ USE_ROOT=false
 INSTALL_TOOLS=false
 INSTALL_VNC=false
 INSTALL_MINIMAL=false
+SETUP_WIFI_MONITOR=false
+KALI_STOP_SCRIPT="${PREFIX}/bin/kali-stop"
 
 # Colors
 RED='\033[0;31m'
@@ -49,10 +52,11 @@ NC='\033[0m' # No Color
 
 for arg in "$@"; do
   case "$arg" in
-    --root)     USE_ROOT=true ;;
-    --tools)    INSTALL_TOOLS=true ;;
-    --vnc)      INSTALL_VNC=true ;;
-    --minimal)  INSTALL_MINIMAL=true ;;
+    --root)          USE_ROOT=true ;;
+    --wifi-monitor)  SETUP_WIFI_MONITOR=true ;;
+    --tools)         INSTALL_TOOLS=true ;;
+    --vnc)           INSTALL_VNC=true ;;
+    --minimal)       INSTALL_MINIMAL=true ;;
     --help|-h)
       sed -n '3,30p' "$0"
       exit 0
@@ -243,29 +247,173 @@ SCRIPT
 
 create_launch_script_root() {
   info "Creating native chroot launch script at $KALI_LAUNCH_SCRIPT ..."
+
+  # Ensure mount point directories exist inside the rootfs
+  for mp in proc sys dev dev/pts sdcard; do
+    mkdir -p "${KALI_INSTALL_DIR}/${mp}"
+  done
+
   cat > "$KALI_LAUNCH_SCRIPT" <<SCRIPT
 #!/usr/bin/env bash
-# Launch Kali Linux native chroot (requires root)
+# Launch Kali Linux native chroot (requires Magisk root)
+#
+# Usage:
+#   kali                     — interactive shell
+#   kali <cmd> [args...]     — run command and exit
+#   kali --stop              — unmount filesystems without entering chroot
+#
+# The script auto-unmounts on exit via a trap.
 
 KALI_DIR="${KALI_INSTALL_DIR}"
 
-# Mount required filesystems
-su -c "
-  mount -o bind /proc  \${KALI_DIR}/proc   2>/dev/null || true
-  mount -o bind /sys   \${KALI_DIR}/sys    2>/dev/null || true
-  mount -o bind /dev   \${KALI_DIR}/dev    2>/dev/null || true
-  mount -o bind /dev/pts \${KALI_DIR}/dev/pts 2>/dev/null || true
-  mount -o bind /sdcard \${KALI_DIR}/sdcard 2>/dev/null || true
-  chroot \${KALI_DIR} /usr/bin/env -i \\
-    HOME=/root \\
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\
-    TERM=\${TERM:-xterm-256color} \\
-    LANG=C.UTF-8 \\
-    \${@:-/bin/bash --login}
-"
+# --- mount helper -----------------------------------------------------------
+
+kali_mount() {
+  su -c "
+    mkdir -p \${KALI_DIR}/{proc,sys,dev,dev/pts,sdcard,run}
+    mountpoint -q \${KALI_DIR}/proc    || mount -t proc  proc  \${KALI_DIR}/proc
+    mountpoint -q \${KALI_DIR}/sys     || mount -t sysfs sys   \${KALI_DIR}/sys
+    mountpoint -q \${KALI_DIR}/dev     || mount -o bind  /dev  \${KALI_DIR}/dev
+    mountpoint -q \${KALI_DIR}/dev/pts || mount -o bind  /dev/pts \${KALI_DIR}/dev/pts
+    mountpoint -q \${KALI_DIR}/sdcard  || mount -o bind  /sdcard  \${KALI_DIR}/sdcard
+  " 2>/dev/null
+}
+
+# --- unmount helper (best-effort, lazy fallback) ----------------------------
+
+kali_umount() {
+  su -c "
+    for mp in sdcard dev/pts dev sys proc run; do
+      mountpoint -q \${KALI_DIR}/\${mp} && \
+        umount -l \${KALI_DIR}/\${mp} 2>/dev/null || true
+    done
+  " 2>/dev/null
+}
+
+# --- stop-only mode ---------------------------------------------------------
+
+if [ "\${1:-}" = "--stop" ]; then
+  echo "Unmounting Kali chroot filesystems..."
+  kali_umount && echo "Done." || echo "Nothing mounted or unmount failed."
+  exit 0
+fi
+
+# --- mount and enter --------------------------------------------------------
+
+kali_mount || { echo "Mount failed — is Magisk root active?"; exit 1; }
+
+# Trap ensures cleanup even on Ctrl-C or unexpected exit
+trap kali_umount EXIT INT TERM
+
+CMD=("\${@:-/bin/bash --login}")
+
+su -c "chroot \${KALI_DIR} /usr/bin/env -i \\
+  HOME=/root \\
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\
+  TERM=\${TERM:-xterm-256color} \\
+  LANG=C.UTF-8 \\
+  \${CMD[*]}"
 SCRIPT
   chmod +x "$KALI_LAUNCH_SCRIPT"
-  success "Root chroot launch script created: run 'kali' in Termux (with root)"
+
+  # kali-stop shortcut
+  cat > "$KALI_STOP_SCRIPT" <<STOP
+#!/usr/bin/env bash
+exec "${KALI_LAUNCH_SCRIPT}" --stop
+STOP
+  chmod +x "$KALI_STOP_SCRIPT"
+
+  success "Root chroot scripts created:"
+  success "  kali       — enter Kali (auto-mounts, auto-unmounts on exit)"
+  success "  kali-stop  — force unmount all Kali filesystems"
+}
+
+# ---- WiFi monitor mode (root only) -----------------------------------------
+
+setup_wifi_monitor() {
+  if ! $USE_ROOT; then
+    warn "--wifi-monitor requires --root (skipping)"
+    return
+  fi
+  info "Configuring WiFi monitor mode support..."
+
+  # Check for iw on the Android side
+  if ! su -c "which iw" &>/dev/null 2>&1; then
+    info "Installing iw in Termux (needed outside chroot for nl80211 control)..."
+    pkg install -y iw 2>/dev/null || \
+      warn "Could not install iw in Termux — install manually: pkg install iw"
+  fi
+
+  # Install aircrack-ng and iw inside Kali
+  local wifi_script="${KALI_INSTALL_DIR}/tmp/wifi-monitor-setup.sh"
+  cat > "$wifi_script" <<'INNER'
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq
+apt-get install -y aircrack-ng iw wireless-tools rfkill
+# Confirm iw is available
+iw --version && echo "iw installed OK"
+INNER
+  chmod +x "$wifi_script"
+  su -c "chroot ${KALI_INSTALL_DIR} /bin/bash /tmp/wifi-monitor-setup.sh"
+  rm -f "$wifi_script"
+
+  # Append a wmon helper inside the chroot launch script
+  cat >> "$KALI_LAUNCH_SCRIPT" <<'SHORTCUT'
+
+# ---------------------------------------------------------------------------
+# WiFi monitor mode helpers (run inside Kali with: kali wmon <iface>)
+# These require root on the Android kernel. Adjust interface name as needed.
+# Common names on Mediatek: wlan0, wlan1  |  check with: ip link
+#
+# Enable:  kali wmon wlan0
+# Disable: kali wmon-off wlan0
+# List:    kali wmon-list
+# ---------------------------------------------------------------------------
+SHORTCUT
+
+  # Create wmon helper scripts inside the rootfs
+  cat > "${KALI_INSTALL_DIR}/usr/local/bin/wmon" <<'WMON'
+#!/bin/bash
+# Enable monitor mode on a WiFi interface
+# Usage: wmon <interface>  [channel]
+IFACE="${1:?Usage: wmon <interface> [channel]}"
+CHAN="${2:-}"
+ip link set "$IFACE" down
+iw dev "$IFACE" set type monitor
+ip link set "$IFACE" up
+[ -n "$CHAN" ] && iw dev "$IFACE" set channel "$CHAN"
+echo "Monitor mode enabled on $IFACE"
+iw dev "$IFACE" info
+WMON
+  chmod +x "${KALI_INSTALL_DIR}/usr/local/bin/wmon"
+
+  cat > "${KALI_INSTALL_DIR}/usr/local/bin/wmon-off" <<'WMON_OFF'
+#!/bin/bash
+# Disable monitor mode, restore managed mode
+# Usage: wmon-off <interface>
+IFACE="${1:?Usage: wmon-off <interface>}"
+ip link set "$IFACE" down
+iw dev "$IFACE" set type managed
+ip link set "$IFACE" up
+echo "Managed mode restored on $IFACE"
+WMON_OFF
+  chmod +x "${KALI_INSTALL_DIR}/usr/local/bin/wmon-off"
+
+  cat > "${KALI_INSTALL_DIR}/usr/local/bin/wmon-list" <<'WMON_LIST'
+#!/bin/bash
+# List wireless interfaces and their current modes
+iw dev 2>/dev/null || ip link show
+WMON_LIST
+  chmod +x "${KALI_INSTALL_DIR}/usr/local/bin/wmon-list"
+
+  success "WiFi monitor mode configured."
+  success "  Inside Kali: wmon wlan0 [channel]   — enable monitor mode"
+  success "              wmon-off wlan0           — restore managed mode"
+  success "              wmon-list                — list interfaces"
+  warn "Note: Monitor mode requires a WiFi chip that supports nl80211 monitor"
+  warn "      The Pritom Tab10's built-in RTL8188EU / Mediatek chip may not"
+  warn "      support monitor mode — an external USB WiFi adapter is recommended."
 }
 
 # ---- Optional: Kali security tools -----------------------------------------
@@ -410,17 +558,27 @@ main() {
     configure_vnc
   fi
 
+  if $SETUP_WIFI_MONITOR; then
+    setup_wifi_monitor
+  fi
+
   echo ""
   echo -e "${GREEN}============================================${NC}"
   echo -e "${GREEN}  Setup complete!                          ${NC}"
   echo -e "${GREEN}============================================${NC}"
   echo ""
   echo -e "  Enter Kali:        ${YELLOW}kali${NC}"
+  if $USE_ROOT; then
+  echo -e "  Unmount (cleanup): ${YELLOW}kali-stop${NC}"
+  fi
   echo -e "  Install tools:     ${YELLOW}kali apt-get install kali-tools-top10${NC}"
   if $INSTALL_VNC; then
   echo -e "  Start desktop:     ${YELLOW}kali --vnc${NC}"
   fi
   echo -e "  Start SSH:         ${YELLOW}kali service ssh start${NC}"
+  if $SETUP_WIFI_MONITOR; then
+  echo -e "  Monitor mode:      ${YELLOW}kali wmon wlan0${NC}  (inside Kali)"
+  fi
   echo ""
   echo -e "  ${YELLOW}Legal:${NC} Use security tools only on systems you are authorized to test."
   echo ""
