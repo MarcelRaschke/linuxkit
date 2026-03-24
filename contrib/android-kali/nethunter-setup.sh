@@ -41,6 +41,7 @@ INSTALL_TOOLS=false
 INSTALL_VNC=false
 INSTALL_MINIMAL=false
 SETUP_WIFI_MONITOR=false
+CHECK_ONLY=false
 KALI_STOP_SCRIPT="${PREFIX}/bin/kali-stop"
 
 # Colors
@@ -59,7 +60,7 @@ for arg in "$@"; do
     --tools)         INSTALL_TOOLS=true ;;
     --vnc)           INSTALL_VNC=true ;;
     --minimal)       INSTALL_MINIMAL=true ;;
-    --check)         run_check; exit 0 ;;
+    --check)         CHECK_ONLY=true ;;
     --help|-h)
       sed -n '3,30p' "$0"
       exit 0
@@ -123,11 +124,13 @@ run_check() {
     fi
   done
 
-  # proot
+  # proot (not needed in --root / native chroot mode)
   if command -v proot &>/dev/null; then
     echo -e "${GREEN}[OK]${NC}  proot available           $(proot --version 2>&1 | head -1)"
-  else
+  elif ! $USE_ROOT; then
     echo -e "${YELLOW}[WW]${NC}  proot not installed       →  pkg install proot"
+  else
+    echo -e "${BLUE}[--]${NC}  proot not installed       (not needed in --root mode)"
   fi
 
   # Existing rootfs
@@ -281,11 +284,18 @@ download_kali_rootfs() {
 
   info "Extracting Kali rootfs to $KALI_INSTALL_DIR ..."
   mkdir -p "$KALI_INSTALL_DIR"
-  proot --link2symlink tar -xJf "$tarball" -C "$KALI_INSTALL_DIR" \
-    --exclude='dev' 2>/dev/null || \
+  if $USE_ROOT; then
+    # proot is not installed in root mode — use plain tar directly
     tar -xJf "$tarball" -C "$KALI_INSTALL_DIR" \
       --exclude='dev' 2>/dev/null || \
-    error "Extraction failed."
+      error "Extraction failed."
+  else
+    proot --link2symlink tar -xJf "$tarball" -C "$KALI_INSTALL_DIR" \
+      --exclude='dev' 2>/dev/null || \
+      tar -xJf "$tarball" -C "$KALI_INSTALL_DIR" \
+        --exclude='dev' 2>/dev/null || \
+      error "Extraction failed."
+  fi
 
   rm -f "$tarball"
   success "Kali rootfs extracted"
@@ -346,6 +356,25 @@ BINDS=(
   "-b" "/dev/pts"
   "-b" "/sdcard"
 )
+
+# Handle --vnc: start VNC server inside Kali, then exit (do not enter shell)
+if [ "\${1:-}" = "--vnc" ]; then
+  proot \\
+    --link2symlink \\
+    -0 \\
+    -r "\${KALI_DIR}" \\
+    "\${BINDS[@]}" \\
+    -w /root \\
+    /usr/bin/env -i \\
+      HOME=/root \\
+      PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\
+      TERM="\${TERM:-xterm-256color}" \\
+      LANG=C.UTF-8 \\
+      vncserver :1 -geometry 1280x800 -depth 24 -localhost no
+  echo "VNC running on \$(hostname -I | awk '{print \$1}'):5901"
+  echo "Change password with: kali vncpasswd"
+  exit 0
+fi
 
 # If a command was passed, execute it; otherwise start a shell
 CMD=("\${@:-/bin/bash --login}")
@@ -427,14 +456,28 @@ kali_mount || { echo "Mount failed — is Magisk root active?"; exit 1; }
 # Trap ensures cleanup even on Ctrl-C or unexpected exit
 trap kali_umount EXIT INT TERM
 
+# Handle --vnc: start VNC server inside Kali, then exit (do not enter chroot shell)
+if [ "\${1:-}" = "--vnc" ]; then
+  su -c "chroot \${KALI_DIR} /usr/bin/env -i \\
+    HOME=/root \\
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\
+    TERM=\${TERM:-xterm-256color} \\
+    LANG=C.UTF-8 \\
+    vncserver :1 -geometry 1280x800 -depth 24 -localhost no"
+  echo "VNC running on \$(hostname -I | awk '{print \$1}'):5901"
+  echo "Change password with: kali vncpasswd"
+  exit 0
+fi
+
 CMD=("\${@:-/bin/bash --login}")
+QUOTED_CMD=\$(printf '%q ' "\${CMD[@]}")
 
 su -c "chroot \${KALI_DIR} /usr/bin/env -i \\
   HOME=/root \\
   PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \\
   TERM=\${TERM:-xterm-256color} \\
   LANG=C.UTF-8 \\
-  \${CMD[*]}"
+  \${QUOTED_CMD}"
 SCRIPT
   chmod +x "$KALI_LAUNCH_SCRIPT"
 
@@ -590,24 +633,26 @@ INNER
 configure_vnc() {
   info "Configuring VNC server inside Kali..."
 
+  local vnc_password
+  vnc_password=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c8)
+
   local vnc_setup="${KALI_INSTALL_DIR}/tmp/vnc-setup.sh"
-  cat > "$vnc_setup" <<'INNER'
+  cat > "$vnc_setup" <<INNER
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y tigervnc-standalone-server xfce4 xfce4-terminal dbus-x11
 mkdir -p /root/.vnc
-# Default VNC password: "kali1234" — change with 'vncpasswd' inside kali
-echo "kali1234" | vncpasswd -f > /root/.vnc/passwd
+echo "${vnc_password}" | vncpasswd -f > /root/.vnc/passwd
 chmod 600 /root/.vnc/passwd
 cat > /root/.vnc/xstartup <<'EOF'
 #!/bin/bash
 export DISPLAY=:1
-xrdb $HOME/.Xresources 2>/dev/null || true
+xrdb \$HOME/.Xresources 2>/dev/null || true
 startxfce4 &
 EOF
 chmod +x /root/.vnc/xstartup
-echo "VNC configured. Run 'vncserver :1 -geometry 1280x800 -depth 24' inside kali."
+echo "VNC packages installed."
 INNER
   chmod +x "$vnc_setup"
 
@@ -621,17 +666,8 @@ INNER
 
   rm -f "$vnc_setup"
 
-  # Add VNC start shortcut to Termux
-  cat >> "$KALI_LAUNCH_SCRIPT" <<'SHORTCUT'
-
-# Run with --vnc to start VNC server
-if [ "${1:-}" = "--vnc" ]; then
-  kali vncserver :1 -geometry 1280x800 -depth 24 -localhost no
-  echo "VNC running on $(hostname -I | awk '{print $1}'):5901"
-  echo "Default password: kali1234  (change with 'kali vncpasswd')"
-fi
-SHORTCUT
   success "VNC configured. Run 'kali --vnc' to start graphical desktop"
+  success "  VNC password: ${vnc_password}  (save this — change with 'kali vncpasswd')"
 }
 
 # ---- Main -------------------------------------------------------------------
@@ -643,6 +679,11 @@ main() {
   echo -e "${BLUE}  Pritom Tab10 Max M10-R02 / Android 14    ${NC}"
   echo -e "${BLUE}============================================${NC}"
   echo ""
+
+  if $CHECK_ONLY; then
+    run_check
+    exit 0
+  fi
 
   check_termux
   check_storage

@@ -107,7 +107,8 @@ service ssh start
 
 # Start VNC desktop (if --vnc was used)
 kali --vnc
-# Connect with a VNC client to <tablet-ip>:5901, password: kali1234
+# Connect with a VNC client to <tablet-ip>:5901
+# VNC password is printed at the end of setup — change with: kali vncpasswd
 
 # WiFi monitor mode (if --wifi-monitor was used, inside Kali)
 wmon wlan1 6      # enable on wlan1, channel 6
