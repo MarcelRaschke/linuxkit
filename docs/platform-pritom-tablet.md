@@ -242,7 +242,33 @@ Installing Magisk unlocks native chroot mode and full kernel access.
 
 **Step 2: Grant Termux root access**
 
-In the Magisk app → **Superuser** tab → find Termux → grant access.
+The first time Termux requests root, Magisk shows a popup. You can also
+pre-grant or manage access manually:
+
+1. Open the **Magisk** app
+2. Tap the **Superuser** tab (shield icon in the bottom navigation bar)
+3. **If Termux is already listed:** tap it and confirm the status is **Allow**
+4. **If Termux is not listed yet:**
+   - Open Termux and type `su` then press Enter
+   - A Magisk popup appears: tap **Grant**
+   - Check **Remember choice** so you are not prompted every session
+   - Termux now appears in the Superuser tab
+5. Verify the grant works — back in Termux:
+
+   ```bash
+   su -c "id"
+   # Expected output: uid=0(root) gid=0(root) groups=0(root) ...
+   ```
+
+**Troubleshooting the root grant:**
+
+| Symptom | Fix |
+|---------|-----|
+| Popup never appears | Swipe Termux away from recents, reopen it, try `su` again |
+| `su: permission denied` after grant | Restart the Magisk app; check the Superuser tab shows Allow (not Deny) |
+| Grant disappears after reboot | Open Magisk → Superuser → re-grant; enable **Persistent** mode if available |
+| "Magisk is not installed" on home screen | Boot image was overwritten by OTA — re-flash the patched `boot.img` |
+| Root works in Termux but not in script | Run `pkg install tsu` and use `tsu` instead of `su` as a workaround |
 
 **Step 3: Setup Kali with root chroot**
 

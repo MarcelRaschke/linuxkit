@@ -48,6 +48,30 @@ contrib/android-kali/
 └── nethunter-setup.sh      # Automated setup script
 ```
 
+## Root Mode (Magisk)
+
+`--root` uses a native chroot with full kernel access (raw sockets, WiFi monitor
+mode, iptables). It requires [Magisk](https://github.com/topjohnwu/Magisk/releases)
+and a Termux root grant.
+
+**Before running `--root`, grant Termux root access:**
+
+1. Open **Magisk** → tap the **Superuser** tab (shield icon)
+2. In Termux, run `su` — a Magisk popup appears → tap **Grant**
+3. Check **Remember choice** to avoid repeated prompts
+4. Verify: `su -c "id"` → should print `uid=0(root) ...`
+
+Then run the setup:
+
+```bash
+bash nethunter-setup.sh --root --tools
+```
+
+If `su -c "id"` fails after granting, try `pkg install tsu` and grant `tsu`
+in the Superuser tab as well. See
+[Root Mode with Magisk](../../docs/platform-pritom-tablet.md#root-mode-with-magisk)
+for full Magisk installation steps and a troubleshooting table.
+
 ## Requirements
 
 - Termux from F-Droid (v0.118+)

@@ -96,12 +96,21 @@ check_storage() {
 check_root() {
   if $USE_ROOT; then
     if ! command -v su &>/dev/null; then
-      error "Root mode requested (--root) but 'su' not found. Install Magisk first."
+      error "'su' not found — Magisk is not installed or not active.
+  Install Magisk: https://github.com/topjohnwu/Magisk/releases
+  Then open Termux, run 'su' to trigger the grant popup, and tap Grant.
+  Re-run this script once root is confirmed: bash nethunter-setup.sh --root"
     fi
     if ! su -c "id" &>/dev/null 2>&1; then
-      error "Root access denied. Grant Termux root permissions in Magisk."
+      error "Root access denied. To fix:
+  1. Open the Magisk app
+  2. Tap the Superuser tab (shield icon)
+  3. Find Termux in the list and set it to Allow
+     -- OR -- open Termux, run 'su', and tap Grant in the popup
+  4. Verify with: su -c \"id\"  (should print uid=0)
+  5. Re-run: bash nethunter-setup.sh --root"
     fi
-    success "Root access confirmed"
+    success "Root access confirmed ($(su -c "id" 2>/dev/null | cut -d' ' -f1))"
   fi
 }
 
