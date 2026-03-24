@@ -76,6 +76,10 @@ if $ENABLE_WAKE_LOCK; then
   fi
 fi
 
+if ! [[ "$BOOT_DELAY" =~ ^[0-9]+$ ]]; then
+  echo "[!!] BOOT_DELAY must be a non-negative integer (got: '${BOOT_DELAY}') — using 15s"
+  BOOT_DELAY=15
+fi
 echo "[*] Waiting ${BOOT_DELAY}s for Android to initialize networking..."
 sleep "$BOOT_DELAY"
 
