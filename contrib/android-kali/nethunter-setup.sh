@@ -433,12 +433,12 @@ kali_mount() {
 # --- unmount helper (best-effort, lazy fallback) ----------------------------
 
 kali_umount() {
-  su -c "
+  su -c '
     for mp in sdcard dev/pts dev sys proc run; do
-      mountpoint -q \${KALI_DIR}/\${mp} && \
-        umount -l \${KALI_DIR}/\${mp} 2>/dev/null || true
+      mountpoint -q ${KALI_INSTALL_DIR}/\$mp && \
+        umount -l ${KALI_INSTALL_DIR}/\$mp 2>/dev/null || true
     done
-  " 2>/dev/null
+  ' 2>/dev/null
 }
 
 # --- stop-only mode ---------------------------------------------------------
@@ -510,6 +510,7 @@ setup_wifi_monitor() {
   fi
 
   # Install aircrack-ng and iw inside Kali
+  mkdir -p "${KALI_INSTALL_DIR}/tmp"
   local wifi_script="${KALI_INSTALL_DIR}/tmp/wifi-monitor-setup.sh"
   cat > "$wifi_script" <<'INNER'
 #!/bin/bash
@@ -586,6 +587,7 @@ WMON_LIST
 install_kali_tools() {
   info "Installing Kali security tools (this may take 10-30 minutes)..."
 
+  mkdir -p "${KALI_INSTALL_DIR}/tmp"
   local tool_script="${KALI_INSTALL_DIR}/tmp/install-tools.sh"
   cat > "$tool_script" <<'INNER'
 #!/bin/bash
@@ -636,6 +638,7 @@ configure_vnc() {
   local vnc_password
   vnc_password=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c8)
 
+  mkdir -p "${KALI_INSTALL_DIR}/tmp"
   local vnc_setup="${KALI_INSTALL_DIR}/tmp/vnc-setup.sh"
   cat > "$vnc_setup" <<INNER
 #!/bin/bash
@@ -673,17 +676,17 @@ INNER
 # ---- Main -------------------------------------------------------------------
 
 main() {
+  if $CHECK_ONLY; then
+    run_check
+    exit 0
+  fi
+
   echo ""
   echo -e "${BLUE}============================================${NC}"
   echo -e "${BLUE}  Kali Linux NetHunter Setup               ${NC}"
   echo -e "${BLUE}  Pritom Tab10 Max M10-R02 / Android 14    ${NC}"
   echo -e "${BLUE}============================================${NC}"
   echo ""
-
-  if $CHECK_ONLY; then
-    run_check
-    exit 0
-  fi
 
   check_termux
   check_storage
