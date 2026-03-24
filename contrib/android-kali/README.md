@@ -23,21 +23,25 @@ and does **not** require an unlocked bootloader. Android continues to run normal
 
 ## Options
 
-| Flag         | Description                                          |
-|--------------|------------------------------------------------------|
-| `--minimal`  | Download minimal rootfs (~200MB) instead of full     |
-| `--tools`    | Install `kali-tools-top10` during setup              |
-| `--vnc`      | Configure VNC server for graphical desktop (XFCE4)  |
-| `--root`     | Use native chroot instead of proot (requires Magisk) |
+| Flag              | Description                                                       |
+|-------------------|-------------------------------------------------------------------|
+| `--minimal`       | Download minimal rootfs (~200MB) instead of full (~1.5GB)         |
+| `--tools`         | Install `kali-tools-top10` during setup                           |
+| `--vnc`           | Configure VNC server for graphical desktop (XFCE4)               |
+| `--root`          | Use native chroot instead of proot (requires Magisk)              |
+| `--wifi-monitor`  | Install WiFi monitor-mode helpers `wmon`/`wmon-off` (needs root)  |
 
-Example — minimal install with security tools:
-```bash
-bash nethunter-setup.sh --minimal --tools
-```
+Flags can be combined freely:
 
-Example — full install with graphical desktop:
 ```bash
-bash nethunter-setup.sh --vnc
+# Minimal base, no extra tools
+bash nethunter-setup.sh --minimal
+
+# Full install with security tools and graphical desktop
+bash nethunter-setup.sh --tools --vnc
+
+# Root chroot with WiFi monitor mode support
+bash nethunter-setup.sh --root --tools --wifi-monitor
 ```
 
 ## Directory Structure
@@ -102,7 +106,44 @@ service ssh start
 # Start VNC desktop (if --vnc was used)
 kali --vnc
 # Connect with a VNC client to <tablet-ip>:5901, password: kali1234
+
+# WiFi monitor mode (if --wifi-monitor was used, inside Kali)
+wmon wlan1 6      # enable on wlan1, channel 6
+airodump-ng wlan1
+wmon-off wlan1    # restore managed mode
 ```
+
+## Cleanup / Unmount (root mode only)
+
+When using `--root`, filesystems are bind-mounted and auto-unmounted on exit.
+If Kali crashes or the session is lost without a clean exit:
+
+```bash
+# Force-unmount all Kali bind mounts
+kali-stop
+```
+
+## Auto-Start on Boot (Termux:Boot)
+
+Install [Termux:Boot](https://f-droid.org/en/packages/com.termux.boot/) from
+F-Droid to launch Kali services automatically when the tablet starts:
+
+```bash
+# Create the Termux:Boot directory
+mkdir -p ~/.termux/boot
+
+# Create an autostart script (starts Kali SSH on boot)
+cat > ~/.termux/boot/kali-boot.sh <<'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+# Auto-start Kali SSH server on device boot
+termux-wake-lock
+kali service ssh start
+EOF
+chmod +x ~/.termux/boot/kali-boot.sh
+```
+
+Open the **Termux:Boot** app once after install to activate it, then reboot
+to verify the script runs automatically.
 
 ## See Also
 

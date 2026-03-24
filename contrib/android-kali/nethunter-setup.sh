@@ -586,8 +586,15 @@ main() {
   fi
   echo -e "  Start SSH:         ${YELLOW}kali service ssh start${NC}"
   if $SETUP_WIFI_MONITOR; then
-  echo -e "  Monitor mode:      ${YELLOW}kali wmon wlan0${NC}  (inside Kali)"
+  echo -e "  Monitor mode:      ${YELLOW}kali wmon wlan1 6${NC}  (inside Kali)"
+  echo -e "  Restore managed:   ${YELLOW}kali wmon-off wlan1${NC}"
   fi
+  echo ""
+  echo -e "  ${BLUE}Auto-start on boot:${NC} Install Termux:Boot from F-Droid, then:"
+  echo -e "    mkdir -p ~/.termux/boot"
+  # shellcheck disable=SC2028
+  echo -e "    echo 'kali service ssh start' > ~/.termux/boot/kali-boot.sh"
+  echo -e "    chmod +x ~/.termux/boot/kali-boot.sh"
   echo ""
   echo -e "  ${YELLOW}Legal:${NC} Use security tools only on systems you are authorized to test."
   echo ""
