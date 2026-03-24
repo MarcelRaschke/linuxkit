@@ -73,10 +73,11 @@ bash contrib/android-kali/nethunter-setup.sh
 Available options:
 
 ```
---minimal   Download minimal rootfs (~200MB) instead of full (~1.5GB)
---tools     Install kali-tools-top10 automatically
---vnc       Set up VNC server + XFCE4 graphical desktop
---root      Use native chroot (requires Magisk root)
+--minimal        Download minimal rootfs (~200MB) instead of full (~1.5GB)
+--tools          Install kali-tools-top10 automatically
+--vnc            Set up VNC server + XFCE4 graphical desktop
+--root           Use native chroot (requires Magisk root)
+--wifi-monitor   Install wmon/wmon-off helpers for WiFi monitor mode (needs --root)
 ```
 
 ### Manual Setup
@@ -208,6 +209,59 @@ To stop the VNC server:
 ```bash
 vncserver -kill :1
 ```
+
+### Auto-Start on Boot (Termux:Boot)
+
+Install [Termux:Boot](https://f-droid.org/en/packages/com.termux.boot/) from
+F-Droid to start Kali services automatically when the device powers on.
+
+**Step 1: Install and activate Termux:Boot**
+
+1. Install from F-Droid (not Google Play)
+2. Open the **Termux:Boot** app once — this registers it as a boot receiver
+3. You can close it immediately after
+
+**Step 2: Create a boot script**
+
+```bash
+mkdir -p ~/.termux/boot
+
+cat > ~/.termux/boot/kali-boot.sh <<'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+# Runs automatically after Android boot
+
+# Keep CPU awake during startup
+termux-wake-lock
+
+# Wait for Android to fully initialize networking
+sleep 10
+
+# Start Kali SSH server so the tablet is reachable over USB/WiFi
+kali service ssh start
+
+# Optional: start VNC (uncomment if --vnc was used)
+# kali vncserver :1 -geometry 1280x800 -depth 24 -localhost no
+EOF
+
+chmod +x ~/.termux/boot/kali-boot.sh
+```
+
+**Step 3: Verify**
+
+Reboot the tablet. After boot, open Termux and check:
+
+```bash
+kali service ssh status
+# Expected: sshd is running
+```
+
+**Notes:**
+- `termux-wake-lock` prevents Android from sleeping and killing the process;
+  install the companion app if the command is not found: `pkg install termux-api`
+- For root mode (`--root`), the boot script calls the same `kali` launcher
+  which auto-mounts and auto-unmounts; no special changes needed
+- Scripts in `~/.termux/boot/` run as the Termux user, not root — Magisk
+  grants root when `kali` calls `su` internally
 
 ### Limitations of proot Mode
 
