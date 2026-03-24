@@ -222,6 +222,85 @@ For full capabilities (including WiFi monitor mode and raw socket operations),
 use the `--root` flag with Magisk-rooted Android, or use
 [Option A](#option-a-native-linuxkit-boot) for native Linux boot.
 
+### Root Mode with Magisk
+
+Installing Magisk unlocks native chroot mode and full kernel access.
+
+**Step 1: Install Magisk**
+
+1. Obtain the stock boot image for your firmware version (from Pritom support or
+   community sources; do NOT flash images from other firmware versions)
+2. Patch it with the [Magisk app](https://github.com/topjohnwu/Magisk/releases)
+   on the tablet itself
+3. Boot to fastboot: hold **Power + Vol Down** ~10s (device-specific)
+4. Flash the patched boot image:
+   ```bash
+   fastboot flash boot magisk_patched_*.img
+   fastboot reboot
+   ```
+5. Open the Magisk app and complete setup
+
+**Step 2: Grant Termux root access**
+
+In the Magisk app → **Superuser** tab → find Termux → grant access.
+
+**Step 3: Setup Kali with root chroot**
+
+```bash
+bash nethunter-setup.sh --root --tools
+```
+
+This uses native `chroot` instead of proot. The `kali` command:
+- Mounts `/proc`, `/sys`, `/dev`, `/dev/pts`, `/sdcard` via bind mounts
+- Enters the chroot with full root capabilities
+- **Auto-unmounts all filesystems on exit** (via shell trap)
+
+Force-unmount if needed (e.g. after a crash):
+
+```bash
+kali-stop
+```
+
+**Step 4: WiFi Monitor Mode (optional)**
+
+Requires a compatible WiFi adapter. The Pritom Tab10's built-in chipset typically
+does **not** support monitor mode — use an external USB WiFi adapter
+(e.g. Alfa AWUS036ACS, TP-Link TL-WN722N v1).
+
+Setup with the automated script:
+
+```bash
+bash nethunter-setup.sh --root --wifi-monitor
+```
+
+Or manually inside Kali:
+
+```bash
+# List interfaces
+wmon-list
+
+# Enable monitor mode on wlan1 (external USB adapter), channel 6
+wmon wlan1 6
+
+# Run airodump-ng
+airodump-ng wlan1
+
+# Restore managed mode
+wmon-off wlan1
+```
+
+**Comparison: proot vs root chroot**
+
+| Feature | proot (no root) | native chroot (Magisk) |
+|---------|-----------------|------------------------|
+| Setup difficulty | Easy | Medium (Magisk required) |
+| Raw sockets (nmap SYN scan) | No | Yes |
+| WiFi monitor mode | No | Yes (compatible adapter) |
+| iptables rules | No | Yes |
+| USB device access (/dev/bus) | No | Yes |
+| Performance | ~95% | ~99% |
+| Android OTA updates | Safe | Risk of losing root |
+
 ---
 
 ## Option A: Native LinuxKit Boot
