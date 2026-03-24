@@ -13,10 +13,12 @@
 #   bash nethunter-setup.sh [--root]
 #
 # OPTIONS:
+#   --check         Run prerequisite diagnostics without installing anything
 #   --root          Use native chroot (requires root / Magisk)
 #   --wifi-monitor  Configure WiFi monitor mode (only with --root, needs compatible adapter)
 #   --tools         Install Kali security tools after setup (needs network)
 #   --vnc           Install VNC server for graphical desktop access
+#   --minimal       Download minimal rootfs (~200MB) instead of full (~1.5GB)
 #   --help          Show this help
 #
 # REQUIREMENTS:
@@ -57,6 +59,7 @@ for arg in "$@"; do
     --tools)         INSTALL_TOOLS=true ;;
     --vnc)           INSTALL_VNC=true ;;
     --minimal)       INSTALL_MINIMAL=true ;;
+    --check)         run_check; exit 0 ;;
     --help|-h)
       sed -n '3,30p' "$0"
       exit 0
@@ -74,6 +77,116 @@ info()    { echo -e "${BLUE}[*]${NC} $*"; }
 success() { echo -e "${GREEN}[+]${NC} $*"; }
 warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
 error()   { echo -e "${RED}[-]${NC} $*"; exit 1; }
+
+# ---- Diagnostic check (--check) --------------------------------------------
+
+run_check() {
+  local ok=true
+  echo ""
+  echo -e "${BLUE}== Kali NetHunter Setup Diagnostics ==${NC}"
+  echo ""
+
+  # Termux
+  if [ -n "${PREFIX:-}" ] && [ -d "$PREFIX" ]; then
+    echo -e "${GREEN}[OK]${NC}  Termux detected           $PREFIX"
+  else
+    echo -e "${RED}[!!]${NC}  Termux not detected       Install Termux from F-Droid"
+    ok=false
+  fi
+
+  # Architecture
+  local arch
+  arch=$(uname -m)
+  if [ "$arch" = "aarch64" ]; then
+    echo -e "${GREEN}[OK]${NC}  Architecture              $arch (ARM64)"
+  else
+    echo -e "${YELLOW}[!!]${NC}  Architecture              $arch (expected aarch64)"
+    ok=false
+  fi
+
+  # Storage
+  local avail
+  avail=$(df -BG "${HOME}" 2>/dev/null | awk 'NR==2{print $4}' | tr -d 'G')
+  if [ "${avail:-0}" -ge 4 ]; then
+    echo -e "${GREEN}[OK]${NC}  Free storage              ${avail}GB (≥4GB required)"
+  else
+    echo -e "${YELLOW}[WW]${NC}  Free storage              ${avail}GB (4GB recommended)"
+  fi
+
+  # Required commands
+  for cmd in curl tar; do
+    if command -v "$cmd" &>/dev/null; then
+      echo -e "${GREEN}[OK]${NC}  Command available         $cmd"
+    else
+      echo -e "${RED}[!!]${NC}  Command missing           $cmd  →  pkg install $cmd"
+      ok=false
+    fi
+  done
+
+  # proot
+  if command -v proot &>/dev/null; then
+    echo -e "${GREEN}[OK]${NC}  proot available           $(proot --version 2>&1 | head -1)"
+  else
+    echo -e "${YELLOW}[WW]${NC}  proot not installed       →  pkg install proot"
+  fi
+
+  # Existing rootfs
+  if [ -d "${KALI_INSTALL_DIR}/usr" ]; then
+    local sz
+    sz=$(du -sh "${KALI_INSTALL_DIR}" 2>/dev/null | cut -f1)
+    echo -e "${GREEN}[OK]${NC}  Kali rootfs exists        ${KALI_INSTALL_DIR} (${sz})"
+  else
+    echo -e "${BLUE}[--]${NC}  Kali rootfs not present   (will be downloaded on setup)"
+  fi
+
+  # kali launch script
+  if [ -x "${KALI_LAUNCH_SCRIPT}" ]; then
+    echo -e "${GREEN}[OK]${NC}  Launch script exists      $KALI_LAUNCH_SCRIPT"
+  else
+    echo -e "${BLUE}[--]${NC}  Launch script missing     (created during setup)"
+  fi
+
+  # Root / su
+  if command -v su &>/dev/null; then
+    if su -c "id" &>/dev/null 2>&1; then
+      echo -e "${GREEN}[OK]${NC}  Root access (Magisk)      $(su -c "id" 2>/dev/null | cut -d' ' -f1)"
+    else
+      echo -e "${YELLOW}[WW]${NC}  su found but access denied  Grant in Magisk → Superuser tab"
+    fi
+  else
+    echo -e "${BLUE}[--]${NC}  su not found              (only needed for --root mode)"
+  fi
+
+  # Network
+  if curl -fsS --max-time 5 https://kali.download/ -o /dev/null 2>/dev/null; then
+    echo -e "${GREEN}[OK]${NC}  Network reachable         kali.download"
+  else
+    echo -e "${YELLOW}[WW]${NC}  kali.download unreachable (check internet connection)"
+  fi
+
+  # WiFi interfaces
+  echo ""
+  echo -e "${BLUE}[*]${NC}  WiFi interfaces:"
+  if command -v iw &>/dev/null; then
+    iw dev 2>/dev/null | grep -E "Interface|type" | sed 's/^/      /' || echo "      (none found)"
+  else
+    ip link show 2>/dev/null | grep -E "wlan|wlp" | sed 's/^/      /' || echo "      (iw not installed: pkg install iw)"
+  fi
+
+  # IP addresses
+  echo ""
+  echo -e "${BLUE}[*]${NC}  Network addresses:"
+  ip -4 addr show 2>/dev/null | grep "inet " | \
+    awk '{print "      "$2 "  (" $NF ")"}' || echo "      (none)"
+
+  echo ""
+  if $ok; then
+    echo -e "${GREEN}All checks passed. Ready to run: bash nethunter-setup.sh${NC}"
+  else
+    echo -e "${YELLOW}Some checks failed — review items marked [!!] above.${NC}"
+  fi
+  echo ""
+}
 
 check_termux() {
   if [ -z "${PREFIX:-}" ] || [ ! -d "$PREFIX" ]; then

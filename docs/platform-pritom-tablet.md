@@ -73,6 +73,7 @@ bash contrib/android-kali/nethunter-setup.sh
 Available options:
 
 ```
+--check          Diagnose prerequisites without installing (arch, storage, root, network)
 --minimal        Download minimal rootfs (~200MB) instead of full (~1.5GB)
 --tools          Install kali-tools-top10 automatically
 --vnc            Set up VNC server + XFCE4 graphical desktop
@@ -167,25 +168,78 @@ apt-get install -y nmap tcpdump wireshark-cli netcat-openbsd \
   aircrack-ng hashcat responder impacket-scripts
 ```
 
-### SSH Access
+### SSH Access via USB Tethering
 
-Enable SSH inside the Kali environment for remote access over USB tethering:
+USB tethering creates a direct Ethernet-over-USB link between the tablet and
+your computer — no WiFi or router required, lower latency, no firewall issues.
+
+**Step 1: Enable USB tethering on the tablet**
+
+1. Connect the tablet to your computer with a USB-C cable
+2. On the tablet: **Settings → Network & Internet → Hotspot & Tethering →
+   USB Tethering** → toggle ON
+3. Android assigns a private IP to both ends (typically `192.168.42.x`)
+
+**Step 2: Find the tablet's IP address**
+
+On the tablet in Termux:
 
 ```bash
-# Inside Kali
+# Show all IPv4 addresses; look for the usb0 or rndis0 interface
+ip -4 addr show
+
+# Example output:
+#   inet 192.168.42.129/24  (usb0)   ← tablet's USB IP
+```
+
+On your computer (to identify the interface):
+
+```bash
+# Linux / macOS
+ip route show | grep -E "192.168.42|usb|rndis"
+# or
+arp -n | grep -v incomplete
+
+# Windows (PowerShell)
+Get-NetIPAddress | Where-Object { $_.IPAddress -like "192.168.*" }
+```
+
+**Step 3: Start SSH inside Kali**
+
+```bash
+# Inside Kali (run 'kali' first in Termux)
 apt-get install -y openssh-server
-# Set a password for the root account
-passwd root
-# Start SSH (proot uses non-standard port by default)
+passwd root            # set a root password
 /usr/sbin/sshd -p 2222 -o "PermitRootLogin yes" -o "PasswordAuthentication yes"
 ```
 
-Connect from your computer:
+**Step 4: Connect from your computer**
 
 ```bash
-# Enable USB tethering on the tablet first (Android Settings → Network)
-ssh -p 2222 root@<tablet-usb-ip>
+ssh -p 2222 root@192.168.42.129   # replace with tablet's actual IP
 ```
+
+**Alternative: ADB port forward (no IP lookup needed)**
+
+If USB tethering is unavailable, use ADB to forward the SSH port:
+
+```bash
+# On your computer (tablet connected via USB, ADB enabled in Developer Options)
+adb forward tcp:2222 tcp:2222
+ssh -p 2222 root@127.0.0.1
+```
+
+**Tip:** Add the tablet to `~/.ssh/config` on your computer for convenience:
+
+```
+Host kali-tablet
+    HostName 192.168.42.129
+    Port 2222
+    User root
+    StrictHostKeyChecking no
+```
+
+Then simply: `ssh kali-tablet`
 
 ### Graphical Desktop via VNC
 

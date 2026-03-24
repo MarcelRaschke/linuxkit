@@ -25,6 +25,7 @@ and does **not** require an unlocked bootloader. Android continues to run normal
 
 | Flag              | Description                                                       |
 |-------------------|-------------------------------------------------------------------|
+| `--check`         | Run diagnostics (arch, storage, network, root) without installing |
 | `--minimal`       | Download minimal rootfs (~200MB) instead of full (~1.5GB)         |
 | `--tools`         | Install `kali-tools-top10` during setup                           |
 | `--vnc`           | Configure VNC server for graphical desktop (XFCE4)               |
@@ -49,7 +50,8 @@ bash nethunter-setup.sh --root --tools --wifi-monitor
 ```
 contrib/android-kali/
 ├── README.md               # This file
-└── nethunter-setup.sh      # Automated setup script
+├── nethunter-setup.sh      # Automated setup script
+└── kali-boot.sh            # Termux:Boot script for auto-start on device boot
 ```
 
 ## Root Mode (Magisk)
