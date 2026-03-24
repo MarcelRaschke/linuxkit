@@ -1,8 +1,8 @@
-# AI Command Center - Forensics Writeup
+# AI Cy8er Command Center - Forensics Writeup
 
 **CTF:** EotW CTF SS CASE IT 2025
 **Category:** Forensics
-**Challenge:** AI Command Center
+**Challenge:** AI Cy8er Command Center
 
 ---
 
