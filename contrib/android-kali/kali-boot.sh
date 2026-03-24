@@ -35,6 +35,18 @@ BOOT_DELAY=15
 
 # Start the Kali SSH server on boot (recommended).
 # Connect over USB tethering or WiFi: ssh -p 2222 root@<tablet-ip>
+#
+# SECURITY WARNING: SSH starts with PasswordAuthentication=yes and
+# PermitRootLogin=yes. Before exposing the tablet to any network, set
+# a strong root password inside Kali:
+#   kali passwd root
+#
+# RECOMMENDED: Switch to key-based authentication to disable passwords.
+# Inside Kali, add your public key once, then disable password auth:
+#   mkdir -p /root/.ssh && chmod 700 /root/.ssh
+#   echo "ssh-ed25519 AAAA... yourkey" >> /root/.ssh/authorized_keys
+#   chmod 600 /root/.ssh/authorized_keys
+# Then change the sshd line below to add: -o "PasswordAuthentication no"
 START_SSH=true
 SSH_PORT=2222
 
