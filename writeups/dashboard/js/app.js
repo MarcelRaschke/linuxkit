@@ -1,16 +1,17 @@
+// Path prefix from the page's depth relative to the dashboard root.
+// Overview (index.html) is depth 0; category pages under pages/ are depth 1.
+function rootPrefix() {
+  const depth = parseInt(document.body.dataset.depth || '0', 10);
+  return '../'.repeat(depth);
+}
+
 function buildNav(activePage) {
   const nav = document.getElementById('main-nav');
+  const prefix = rootPrefix();
   const links = [
     { href: 'index.html', label: 'Overview', id: 'index' },
-    ...CATEGORIES.map(c => ({
-      href: `pages/${c.id}.html`,
-      label: c.name,
-      id: c.id
-    }))
+    ...CATEGORIES.map(c => ({ href: `pages/${c.id}.html`, label: c.name, id: c.id }))
   ];
-
-  const isSubpage = location.pathname.includes('/pages/');
-  const prefix = isSubpage ? '../' : '';
 
   nav.innerHTML = `
     <div class="nav-inner">
@@ -24,17 +25,15 @@ function buildNav(activePage) {
 }
 
 function buildFooter() {
-  const footer = document.getElementById('main-footer');
-  footer.innerHTML = `AI Cy8er Command Center &mdash; EotW CTF SS CASE IT 2025`;
+  document.getElementById('main-footer').innerHTML =
+    `AI Cy8er Command Center &mdash; EotW CTF SS CASE IT 2025`;
 }
 
 function renderOverview() {
   const stats = getStats();
-  const app = document.getElementById('app');
-
   const solveRate = stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0;
 
-  app.innerHTML = `
+  document.getElementById('app').innerHTML = `
     <div class="hero">
       <h1>AI Cy8er Command Center</h1>
       <div class="subtitle">EotW CTF &bull; SS CASE IT 2025</div>
@@ -79,9 +78,9 @@ function renderCategoryPage(catId) {
   const cat = CATEGORIES.find(c => c.id === catId);
   if (!cat) return;
 
+  const prefix = rootPrefix();
   const challenges = getChallengesByCategory(catId);
   const app = document.getElementById('app');
-
   const diffClass = d => `badge badge-${d.toLowerCase()}`;
 
   if (challenges.length === 0) {
@@ -100,12 +99,15 @@ function renderCategoryPage(catId) {
     return;
   }
 
+  const solved = challenges.filter(c => c.solved).length;
+  const points = challenges.filter(c => c.solved).reduce((s, c) => s + c.points, 0);
+
   app.innerHTML = `
     <div class="page-header">
       <div class="page-icon">${cat.icon}</div>
       <div>
         <h1>${cat.name}</h1>
-        <p>${challenges.filter(c=>c.solved).length}/${challenges.length} solved &bull; ${challenges.filter(c=>c.solved).reduce((s,c)=>s+c.points,0)} pts</p>
+        <p>${solved}/${challenges.length} solved &bull; ${points} pts</p>
       </div>
     </div>
     <table class="challenge-table">
@@ -128,9 +130,21 @@ function renderCategoryPage(catId) {
             </td>
             <td><span class="points">${ch.points}</span></td>
             <td><span class="${diffClass(ch.difficulty)}">${ch.difficulty}</span></td>
-            <td>${ch.writeup ? `<a href="${ch.writeup}" class="writeup-link">[View]</a>` : '<span style="color:var(--text-muted)">--</span>'}</td>
+            <td>${ch.writeup ? `<a href="${prefix}${ch.writeup}" class="writeup-link">[View]</a>` : '<span style="color:var(--text-muted)">--</span>'}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>`;
+}
+
+// Single entry point: each page sets <body data-page="..."> and calls initDashboard().
+function initDashboard() {
+  const page = document.body.dataset.page;
+  buildNav(page === 'index' ? 'index' : page);
+  buildFooter();
+  if (page === 'index') {
+    renderOverview();
+  } else {
+    renderCategoryPage(page);
+  }
 }
