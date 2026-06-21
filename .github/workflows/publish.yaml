@@ -1,10 +1,10 @@
-# publish changes that are merged to master
+# publish changes that are merged to main
 name: Packages Push
 on:
   workflow_run:
     workflows: [LinuxKit CI]
     types: [completed]
-    branches: [master, main]
+    branches: [main]
 
 jobs:
   packages:

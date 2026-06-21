@@ -29,8 +29,8 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Publish Packages as Release
       # this should not build anything, as they all should be built already
-      # however, it can fail if we push the tag before the merge-to-master build is complete, since that may publish
-      # so *always* wait for any merge-to-master to complete before publishing pkg-v* tags
+      # however, it can fail if we push the tag before the merge-to-main build is complete, since that may publish
+      # so *always* wait for any merge-to-main to complete before publishing pkg-v* tags
       run: |
         RELEASE_TAG=${GITHUB_REF#refs/tags/pkg-}
         echo "RELEASE_TAG=${RELEASE_TAG}"
