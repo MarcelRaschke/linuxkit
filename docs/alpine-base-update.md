@@ -50,7 +50,7 @@ Note that if you are cutting a release, the `LK_BRANCH` may have a release-type 
 
 Make sure that you have the latest version of the `linuxkit`
 utility in the path. Alternatively, you may wish to compile the latest version from
-master.
+main.
 
 ### Create a new branch
 

@@ -61,7 +61,7 @@ func pkgBuilderCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&builders, "builders", "", "Which builders to use for which platforms, e.g. linux/arm64=docker-context-arm64, overrides defaults and environment variables, see https://github.com/linuxkit/linuxkit/blob/master/docs/packages.md#Providing-native-builder-nodes")
+	cmd.PersistentFlags().StringVar(&builders, "builders", "", "Which builders to use for which platforms, e.g. linux/arm64=docker-context-arm64, overrides defaults and environment variables, see https://github.com/linuxkit/linuxkit/blob/main/docs/packages.md#Providing-native-builder-nodes")
 	cmd.PersistentFlags().Var(&builderName, "builder-name", fmt.Sprintf("Name of the buildkit builder container, default: %s, overrides env var %s", pkglib.DefaultBuilderName(), envVarBuilderName))
 	cmd.PersistentFlags().StringVar(&platforms, "platforms", fmt.Sprintf("linux/%s", runtime.GOARCH), "Which platforms we built images for")
 	cmd.PersistentFlags().StringVar(&builderImage, "builder-image", defaultBuilderImage, "buildkit builder container image to use")

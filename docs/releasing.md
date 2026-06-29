@@ -66,13 +66,13 @@ Once the PR is merged we can do the actual release.
 - Identify the merge commit for your PR and tag it and push it to the main LinuxKit repository (remote `upstream` in my case):
 
 ```
-git tag $LK_RELEASE master
+git tag $LK_RELEASE main
 git push upstream $LK_RELEASE
 ```
 
 Then head over to GitHub and look at the `Releases` tab. You should see the new tag. Edit it:
 - Add the changelog message
-- Head over to the Circle CI page of the master build (try the Circle CI badge in the top level `README.md`)
+- Head over to the Circle CI page of the main build (try the Circle CI badge in the top level `README.md`)
 - Download the artefacts and SHA256 sums file.
 - Add the downloaded binaries to the release page (drag-and-drop below the editor window)
 - Add the `sha256` sums to the release notes on the release page

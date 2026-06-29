@@ -311,7 +311,7 @@ func pkgBuildCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&docker, "docker", false, "Store the built image in the docker image cache instead of the default linuxkit cache")
 	cmd.Flags().StringVar(&platforms, "platforms", "", "Which platforms to build for, defaults to all of those for which the package can be built")
 	cmd.Flags().StringVar(&skipPlatforms, "skip-platforms", "", "Platforms that should be skipped, even if present in build.yml")
-	cmd.Flags().StringVar(&builders, "builders", "", "Which builders to use for which platforms, e.g. linux/arm64=docker-context-arm64, overrides defaults and environment variables, see https://github.com/linuxkit/linuxkit/blob/master/docs/packages.md#Providing-native-builder-nodes")
+	cmd.Flags().StringVar(&builders, "builders", "", "Which builders to use for which platforms, e.g. linux/arm64=docker-context-arm64, overrides defaults and environment variables, see https://github.com/linuxkit/linuxkit/blob/main/docs/packages.md#Providing-native-builder-nodes")
 	cmd.Flags().Var(&builderName, "builder-name", fmt.Sprintf("Name of the buildkit builder container, default: %s, overrides env var %s", pkglib.DefaultBuilderName(), envVarBuilderName))
 	cmd.Flags().Var(&builderImage, "builder-image", fmt.Sprintf("buildkit builder container image to use, overrides env var %s", envVarBuilderImage))
 	cmd.Flags().Var(&builderConfig, "builder-config", fmt.Sprintf("path to buildkit builder config.toml file to use, overrides the default config.toml in the builder image. When provided, copied over into builder, along with all certs. Use paths for certificates relative to your local host, they will be adjusted on copying into the container. USE WITH CAUTION. Overrides env var %s", envVarBuilderConfig))

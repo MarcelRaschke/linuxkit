@@ -323,7 +323,7 @@ This will do the following:
 1. Push the manifest and all of the images to the hub
 
 Note that for actual release images, these steps normally are performed as part
-of CI, by the merge-to-master process.
+of CI, by the merge-to-main process.
 
 #### Prerequisites
 

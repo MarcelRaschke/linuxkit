@@ -75,7 +75,7 @@ then entered where the permission violation can be handled.
 Custom Linux distributions utilizing the split kernel can be readily built
 using LinuxKit by simply specifying an okernel image in the `kernel` section
 of the LinuxKit OS image YAML specification. See the sample YAML files provided
-in [examples/](https://github.com/linuxkit/linuxkit/tree/master/projects/okernel/examples) for more details.
+in [examples/](https://github.com/linuxkit/linuxkit/tree/main/projects/okernel/examples) for more details.
 
 ## Building the split kernel image for LinuxKit
 

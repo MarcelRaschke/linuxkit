@@ -45,8 +45,8 @@ Label                           | Use for
 `process/cherry-picked`         | PRs that have been cherry-picked. This label is helpful to find PR's that have been added to release-candidates, and to update the change log
 `process/docs-cherry-pick`      | PRs that should be cherry-picked in the docs branch. Only apply this label for changes that apply to the *current* release, and generic documentation fixes, such as Markdown and spelling fixes.
 `process/docs-cherry-picked`    | PRs that have been cherry-picked in the docs branch
-`process/merge-to-master`       | PRs that are opened directly on the bump/release branch, but also need to be merged back to "master"
-`process/merged-to-master`      | PRs that have been merged back to "master"
+`process/merge-to-main`       | PRs that are opened directly on the bump/release branch, but also need to be merged back to "main"
+`process/merged-to-main`      | PRs that have been merged back to "main"
 
 
 ## Workflow
