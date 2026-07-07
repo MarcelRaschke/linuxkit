@@ -1,8 +1,6 @@
 module github.com/linuxkit/linuxkit/src/cmd/linuxkit
 
-go 1.24.3
-
-toolchain go1.24.12
+go 1.25.0
 
 require (
 	github.com/Azure/azure-sdk-for-go v56.3.0+incompatible
@@ -28,7 +26,7 @@ require (
 	github.com/moby/vpnkit v0.4.1-0.20200311130018-2ffc1dd8a84e
 	github.com/moul/gotty-client v1.7.1-0.20180526075433-e5589f6df359
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/opencontainers/runtime-spec v1.2.1
+	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/pkg/term v1.1.0
 	github.com/radu-matei/azure-sdk-for-go v5.0.0-beta.0.20161118192335-3b1282355199+incompatible
 	github.com/radu-matei/azure-vhd-utils v0.0.0-20170531165126-e52754d5569d
@@ -39,19 +37,19 @@ require (
 	github.com/surma/gocpio v1.0.2-0.20160926205914-fcb68777e7dc
 	github.com/vmware/govmomi v0.20.3
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/crypto v0.42.0
-	golang.org/x/net v0.44.0
-	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.17.0
-	golang.org/x/sys v0.37.0
-	golang.org/x/term v0.35.0
+	golang.org/x/crypto v0.53.0
+	golang.org/x/net v0.56.0
+	golang.org/x/oauth2 v0.32.0
+	golang.org/x/sync v0.21.0
+	golang.org/x/sys v0.46.0
+	golang.org/x/term v0.44.0
 	google.golang.org/api v0.149.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	github.com/Code-Hex/vz/v3 v3.0.0
-	github.com/containerd/containerd/v2 v2.2.0
+	github.com/containerd/containerd/v2 v2.2.5
 	github.com/containerd/platforms v1.0.0-rc.2
 	github.com/docker/buildx v0.21.1
 	github.com/equinix/equinix-sdk-go v0.42.0
@@ -64,7 +62,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.7.0 // indirect
+	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/Azure/go-autorest v14.2.1-0.20210115164004-c0fe8b0fea3d+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
@@ -108,7 +106,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/linuxkit/virtsock v0.0.0-20201010232012-f8cee7dfc7a3 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -153,11 +151,11 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/grpc v1.76.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
