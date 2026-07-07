@@ -376,8 +376,14 @@ if [ "\${1:-}" = "--vnc" ]; then
   exit 0
 fi
 
-# If a command was passed, execute it; otherwise start a shell
-CMD=("\${@:-/bin/bash --login}")
+# If a command was passed, execute it; otherwise start a login shell.
+# A quoted \${@:-default} does not word-split, so an empty \$@ would try to
+# exec "/bin/bash --login" as one filename. Build the default as an array.
+if [ "\$#" -eq 0 ]; then
+  CMD=(/bin/bash --login)
+else
+  CMD=("\$@")
+fi
 
 exec proot \\
   --link2symlink \\
@@ -469,7 +475,11 @@ if [ "\${1:-}" = "--vnc" ]; then
   exit 0
 fi
 
-CMD=("\${@:-/bin/bash --login}")
+if [ "\$#" -eq 0 ]; then
+  CMD=(/bin/bash --login)
+else
+  CMD=("\$@")
+fi
 QUOTED_CMD=\$(printf '%q ' "\${CMD[@]}")
 
 su -c "chroot \${KALI_DIR} /usr/bin/env -i \\
