@@ -33,7 +33,7 @@ clone (in my setup the official LinuxKit repository is available as
 `upstream` remote). If your setup is different, you may have to adjust
 some of the commands below.
 
-As a starting point you have to be on the update to date master branch
+As a starting point you have to be on the update to date main branch
 and be in the root directory of your local git clone. You should also
 have the same setup on all build machines used.
 

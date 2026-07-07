@@ -33,7 +33,7 @@ since the push out can be slow and require retries, we try to make all of the ch
 
 ### Preparation
 
-As a starting point you have to be on the update to date master branch
+As a starting point you have to be on the update to date main branch
 and be in the root directory of your local git clone. You should also
 have the same setup on all build machines used.
 

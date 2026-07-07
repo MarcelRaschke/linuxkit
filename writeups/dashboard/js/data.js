@@ -23,6 +23,8 @@ const CHALLENGES = [
     points: 500,
     difficulty: "Hard",
     solved: true,
+    // Path is relative to the dashboard root (writeups/dashboard/); the
+    // renderer prepends the page-depth prefix so it resolves from any page.
     writeup: "../forensics/ai-command-center.md",
     summary: "Forensic analysis of an AI command and control infrastructure."
   }
