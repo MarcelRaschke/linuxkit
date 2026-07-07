@@ -146,11 +146,39 @@ type TaskInfo struct {
 
 	// runtime is the runtime name for the container, and cannot be changed.
 	runtime string
+
+	// runtimeOptions is the runtime options for the container, and when task options are set,
+	// they will be based on the runtimeOptions.
+	// https://github.com/containerd/containerd/issues/11568
+	runtimeOptions typeurl.Any
 }
 
 // Runtime name for the container
 func (i *TaskInfo) Runtime() string {
 	return i.runtime
+}
+
+// getRuncOptions returns a reference to the runtime options for use by the task.
+// If the set of options is not set by the opts passed into the NewTask creation
+// this function first attempts to initialize the runtime options with a copy of the runtimeOptions,
+// otherwise an empty set of options is assigned and returned
+func (i *TaskInfo) getRuncOptions() (*options.Options, error) {
+	if i.Options != nil {
+		opts, ok := i.Options.(*options.Options)
+		if !ok {
+			return nil, errors.New("invalid runtime v2 options format")
+		}
+		return opts, nil
+	}
+
+	opts := &options.Options{}
+	if i.runtimeOptions != nil && i.runtimeOptions.GetValue() != nil {
+		if err := typeurl.UnmarshalTo(i.runtimeOptions, opts); err != nil {
+			return nil, fmt.Errorf("failed to get runtime v2 options: %w", err)
+		}
+	}
+	i.Options = opts
+	return opts, nil
 }
 
 // Task is the executable object within containerd
@@ -345,10 +373,15 @@ func (t *task) Delete(ctx context.Context, opts ...ProcessDeleteOpts) (*ExitStat
 		return nil, err
 	}
 
+	runtime, err := t.client.defaultRuntime(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default runtime: %w", err)
+	}
+
 	switch status.Status {
 	case Stopped, Unknown, "":
 	case Created:
-		if t.client.runtime == plugins.RuntimePlugin.String()+".windows" {
+		if runtime == plugins.RuntimePlugin.String()+".windows" {
 			// On windows Created is akin to Stopped
 			break
 		}
@@ -365,7 +398,7 @@ func (t *task) Delete(ctx context.Context, opts ...ProcessDeleteOpts) (*ExitStat
 		// io.Wait locks for restored tasks on Windows unless we call
 		// io.Close first (https://github.com/containerd/containerd/issues/5621)
 		// in other cases, preserve the contract and let IO finish before closing
-		if t.client.runtime == plugins.RuntimePlugin.String()+".windows" {
+		if runtime == plugins.RuntimePlugin.String()+".windows" {
 			t.io.Close()
 		}
 		// io.Cancel is used to cancel the io goroutine while it is in
