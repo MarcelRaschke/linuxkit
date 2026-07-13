@@ -51,7 +51,7 @@ require (
 	github.com/Code-Hex/vz/v3 v3.0.0
 	github.com/containerd/containerd/v2 v2.2.5
 	github.com/containerd/platforms v1.0.0-rc.2
-	github.com/docker/buildx v0.21.1
+	github.com/docker/buildx v0.21.3
 	github.com/equinix/equinix-sdk-go v0.42.0
 	github.com/hashicorp/go-version v1.7.0
 	github.com/in-toto/in-toto-golang v0.11.0
