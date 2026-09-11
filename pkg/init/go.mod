@@ -3,7 +3,7 @@ module github.com/linuxkit/linuxkit/pkg/init
 go 1.25.0
 
 require (
-	github.com/containerd/containerd/v2 v2.0.10
+	github.com/containerd/containerd/v2 v2.0.12
 	github.com/containerd/errdefs v1.0.0
 	github.com/opencontainers/runtime-spec v1.2.0
 	github.com/pelletier/go-toml v1.9.5
