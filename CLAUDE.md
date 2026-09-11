@@ -85,6 +85,86 @@ Test labels: `linuxkit.packages`, `linuxkit.kernel`, `linuxkit.build`, `linuxkit
 - Squash into logical units before PR
 - Reference issues: `Closes #XXXX` or `Fixes #XXXX`
 
+## CLI Subcommands
+
+The `linuxkit` CLI is built with cobra. Top-level subcommands:
+
+| Command | Description |
+|---------|-------------|
+| `build` | Build a bootable OS image from a YAML config file |
+| `cache` | Manage the local image cache |
+| `metadata` | Manage ISO metadata for VM configuration |
+| `pkg` | Package building, pushing, and tagging |
+| `push` | Push a VM image to a cloud provider |
+| `run` | Run a VM image on a hypervisor or cloud platform |
+| `serve` | Serve a directory over HTTP |
+| `version` | Report the linuxkit version |
+
+### `linuxkit build`
+
+Assembles a bootable image from a YAML config. Default output is `kernel+initrd`.
+
+Output formats (`-format`): `kernel+initrd`, `tar`, `docker`, `iso-bios`, `iso-efi`, `iso-efi-initrd`, `raw-bios`, `raw-efi`, `aws`, `gcp`, `qcow2-bios`, `qcow2-efi`, `vhd`, `vmdk`, `kernel+squashfs`, `kernel+erofs`, `kernel+iso`, `tar-kernel-initrd`, `rpi3`
+
+Key flags: `-name`, `-dir`, `-output`, `-format`, `-size`, `-pull`, `-docker`, `-arch`, `-sbom`, `-dry-run`
+
+### `linuxkit run`
+
+Runs an image on a backend. Platform-specific defaults: `virtualization` (macOS), `qemu` (Linux), `hyperv` (Windows).
+
+Backends: `aws`, `azure`, `gcp`, `hyperkit`, `virtualization` (macOS Virtualization.framework), `hyperv`, `openstack`, `packet` (Equinix Metal), `qemu`, `scaleway`, `vmware`, `vbox`, `vcenter`
+
+Common flags: `--cpus`, `--mem`, `--disk`
+
+### `linuxkit push`
+
+Push images to cloud providers: `aws`, `azure`, `gcp`, `openstack`, `packet` (Equinix Metal), `scaleway`, `vcenter`
+
+### `linuxkit cache`
+
+Manage the local OCI image cache (`~/.linuxkit/cache/`):
+
+| Subcommand | Description |
+|------------|-------------|
+| `ls` | List cached images |
+| `clean` | Remove all or published-only cached images |
+| `rm` | Remove specific images from cache |
+| `pull` | Pull images from registry into cache |
+| `push` | Push cached images to a registry |
+| `export` | Export a cached image to a tar file |
+| `import` | Import an image tar into the cache |
+
+### `linuxkit pkg`
+
+Build and manage OCI packages from `pkg/` directories:
+
+| Subcommand | Description |
+|------------|-------------|
+| `build` | Build package(s) from source directories |
+| `push` | Alias for `pkg build --push` — build and push |
+| `show-tag` | Show the computed tag for package(s) based on source hash |
+| `manifest` | Update multi-arch manifest in registry |
+| `remote-tag` | Tag a package in a remote registry without downloading |
+| `builder` | Manage buildkit builders for package builds |
+
+Key flags: `--org`, `--disable-cache`, `--network`, `--force`, `--platforms`, `--build-yml`, `--dev`
+
+### `linuxkit metadata`
+
+| Subcommand | Description |
+|------------|-------------|
+| `create` | Create an ISO file with metadata (compatible with `linuxkit/metadata` package) |
+
+### Source layout for CLI commands
+
+Each subcommand lives in its own file(s) under `src/cmd/linuxkit/`:
+- `build.go` — `linuxkit build`
+- `run.go` + `run_*.go` — `linuxkit run` and each backend
+- `push.go` + `push_*.go` — `linuxkit push` and each provider
+- `cache.go` + `cache_*.go` — `linuxkit cache` and subcommands
+- `pkg.go` + `pkg_*.go` — `linuxkit pkg` and subcommands
+- `serve.go`, `metadata.go`, `version.go` — remaining commands
+
 ## Package Structure
 
 Each package in `pkg/<name>/` contains:
