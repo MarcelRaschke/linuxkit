@@ -294,6 +294,14 @@ func (r *dockerResolver) Resolve(ctx context.Context, ref string) (string, ocisp
 	}
 
 	for _, u := range paths {
+		// falling back to /blobs endpoint should happen in extreme cases - those to
+		// support legacy registries. we want to limit the fallback to when /manifests endpoint
+		// returned 404. Falling back on transient errors could do more harm, like polluting
+		// the local content store with incorrectly typed descriptors as /blobs endpoint tends
+		// always return with application/octet-stream.
+		if firstErrPriority > 2 {
+			break
+		}
 		for i, host := range hosts {
 			ctx := log.WithLogger(ctx, log.G(ctx).WithField("host", host.Host))
 
@@ -332,7 +340,23 @@ func (r *dockerResolver) Resolve(ctx context.Context, ref string) (string, ocisp
 				}
 				if resp.StatusCode > 399 {
 					if firstErrPriority < 3 {
-						firstErr = remoteerrors.NewUnexpectedStatusErr(resp)
+						err := remoteerrors.NewUnexpectedStatusErr(resp)
+						// A HEAD 403 carries no body, so issue a follow-up GET
+						// to the same URL to surface the registry's error
+						// details for diagnostics.
+						if resp.StatusCode == http.StatusForbidden {
+							err = withGETErrorBody(ctx, err, resp, func() (*http.Response, error) {
+								getReq := base.request(host, http.MethodGet, u...)
+								if addErr := getReq.addNamespace(base.refspec.Hostname()); addErr != nil {
+									return nil, addErr
+								}
+								for key, value := range r.resolveHeader {
+									getReq.header[key] = append(getReq.header[key], value...)
+								}
+								return getReq.doWithRetries(ctx, nil)
+							})
+						}
+						firstErr = err
 						firstErrPriority = 3
 					}
 					log.G(ctx).Infof("%s after status: %s", nextHostOrFail(i), resp.Status)
