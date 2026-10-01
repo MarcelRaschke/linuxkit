@@ -1,0 +1,35 @@
+{
+  "skill_name": "linuxkit-pkg-builder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to create a new LinuxKit package for a custom Go application called 'myagent'. It should be built for both amd64 and arm64 architectures. Can you scaffold the package structure with boilerplate files?",
+      "expected_output": "Generated package directory at pkg/myagent/ with build.yml, Dockerfile, and .dockerignore. Files should have correct Alpine base image, multi-stage pattern, and architecture declarations.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a package at pkg/sshd that's failing to build. The Dockerfile references a parent image that's not building first. Can you help me diagnose and fix the dependency issue?",
+      "expected_output": "Identifies missing dependency in build.yml, suggests adding parent package to deps list, provides corrected build.yml and explains how to verify build order with linuxkit pkg build.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I need to build pkg/init for all supported architectures (amd64, arm64, s390x) and push to my Docker registry. What's the best way to do this and ensure the manifest is created correctly?",
+      "expected_output": "Provides multi-arch build workflow using linuxkit pkg build --platforms, explains manifest creation steps, includes docker manifest commands or points to linuxkit pkg manifest, and identifies registry authentication requirements.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I'm setting up a GitHub Actions workflow to automatically build and push all packages in pkg/ when changes are made. What commands should I run and what secrets do I need to set up?",
+      "expected_output": "Provides complete GitHub Actions YAML with matrix build strategy, explains DOCKER_USERNAME and DOCKER_PASSWORD secrets, includes docker login step, and shows how to use 'cd pkg && make push' or loop through packages.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Can you explain what a LinuxKit package is, show me the structure of pkg/init, and walk me through building it locally then pushing to a private registry?",
+      "expected_output": "Explains OCI package concept in LinuxKit, describes build.yml and Dockerfile structure, shows step-by-step build process with actual commands, and includes authentication/push guidance for private registries.",
+      "files": []
+    }
+  ]
+}
