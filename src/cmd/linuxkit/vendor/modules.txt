@@ -687,7 +687,7 @@ github.com/shibumi/go-pathspec
 # github.com/sigstore/sigstore v1.10.8
 ## explicit; go 1.25.0
 github.com/sigstore/sigstore/pkg/cryptoutils
-# github.com/sigstore/sigstore-go v1.2.0
+# github.com/sigstore/sigstore-go v1.2.1
 ## explicit; go 1.25.0
 github.com/sigstore/sigstore-go/pkg/fulcio/certificate
 # github.com/sirupsen/logrus v1.9.4
