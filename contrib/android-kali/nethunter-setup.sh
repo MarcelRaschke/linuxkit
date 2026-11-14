@@ -419,7 +419,9 @@ create_launch_script_root() {
 #   kali <cmd> [args...]     — run command and exit
 #   kali --stop              — unmount filesystems without entering chroot
 #
-# The script auto-unmounts on exit via a trap.
+# The script auto-unmounts on exit via a trap, unless processes are still
+# running inside the chroot (sshd, vncserver, another kali session). In that
+# case the mounts are left in place; run 'kali --stop' to force-unmount.
 
 KALI_DIR="${KALI_INSTALL_DIR}"
 
@@ -447,9 +449,40 @@ kali_umount() {
   ' 2>/dev/null
 }
 
+# --- busy check: is any process still running inside the chroot? ------------
+# Compares each process's root directory with the (symlink-resolved) chroot
+# path. Returns 0 if at least one process lives in the chroot.
+
+kali_busy() {
+  su -c '
+    d=\$(cd ${KALI_INSTALL_DIR} 2>/dev/null && pwd -P) || exit 1
+    for p in /proc/[0-9]*; do
+      [ "\$(readlink "\$p/root" 2>/dev/null)" = "\$d" ] && exit 0
+    done
+    exit 1
+  ' 2>/dev/null
+}
+
+# --- exit cleanup: unmount only when nothing is left running ----------------
+# Daemons started via 'kali --vnc' or 'kali /usr/sbin/sshd' outlive this
+# script; unmounting /proc, /dev and /dev/pts under them would break them.
+
+kali_cleanup() {
+  trap - EXIT INT TERM
+  if kali_busy; then
+    echo "Kali: processes still running in chroot — mounts left in place." >&2
+    echo "Kali: run 'kali --stop' to force-unmount when done." >&2
+  else
+    kali_umount
+  fi
+}
+
 # --- stop-only mode ---------------------------------------------------------
 
 if [ "\${1:-}" = "--stop" ]; then
+  if kali_busy; then
+    echo "Warning: processes are still running in the chroot; they will lose /proc and /dev."
+  fi
   echo "Unmounting Kali chroot filesystems..."
   kali_umount && echo "Done." || echo "Nothing mounted or unmount failed."
   exit 0
@@ -460,7 +493,7 @@ fi
 kali_mount || { echo "Mount failed — is Magisk root active?"; exit 1; }
 
 # Trap ensures cleanup even on Ctrl-C or unexpected exit
-trap kali_umount EXIT INT TERM
+trap kali_cleanup EXIT INT TERM
 
 # Handle --vnc: start VNC server inside Kali, then exit (do not enter chroot shell)
 if [ "\${1:-}" = "--vnc" ]; then
