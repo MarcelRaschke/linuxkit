@@ -119,7 +119,9 @@ wmon-off wlan1    # restore managed mode
 ## Cleanup / Unmount (root mode only)
 
 When using `--root`, filesystems are bind-mounted and auto-unmounted on exit.
-If Kali crashes or the session is lost without a clean exit:
+If background services (SSH, VNC) or another `kali` session are still running
+in the chroot, the mounts are kept so those keep working. To unmount in that
+case, or after a crash or lost session:
 
 ```bash
 # Force-unmount all Kali bind mounts

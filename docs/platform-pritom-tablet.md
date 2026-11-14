@@ -387,7 +387,9 @@ bash nethunter-setup.sh --root --tools
 This uses native `chroot` instead of proot. The `kali` command:
 - Mounts `/proc`, `/sys`, `/dev`, `/dev/pts`, `/sdcard` via bind mounts
 - Enters the chroot with full root capabilities
-- **Auto-unmounts all filesystems on exit** (via shell trap)
+- **Auto-unmounts all filesystems on exit** (via shell trap), unless processes
+  such as `sshd` or `vncserver` are still running in the chroot — then mounts
+  stay until `kali-stop`
 
 Force-unmount if needed (e.g. after a crash):
 
